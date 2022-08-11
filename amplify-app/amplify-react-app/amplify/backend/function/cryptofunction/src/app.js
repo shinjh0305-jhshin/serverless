@@ -11,6 +11,7 @@ See the License for the specific language governing permissions and limitations 
 
 const express = require('express')
 const bodyParser = require('body-parser')
+const axios = require('axios')
 const awsServerlessExpressMiddleware = require('aws-serverless-express/middleware')
 
 // declare a new express app
@@ -29,14 +30,19 @@ app.use(function(req, res, next) {
 /**********************
  * Example get method *
  **********************/
-app.get('/coins', function(req, res) {
-  const coins = [
-    { name: 'Bitcoin', symbol: 'BTC', price_usd: '10000' },
-    { name: 'Ethereum', symbol: 'ETH', price_usd: '400' },
-    { name: 'Litecoin', symbol: 'LTC', price_usd: '150' }
-  ];
-  res.json({ coins });
+app.get('/coins', async function(req, res) {
+  let apiurl = `https://api.coinlore.net/api/tickers/?start=0&limit=10`;
+
+  //쿼리스트링 매개변수가 있는 경우, URL 수정
+  if (req.apiGateway && req.apiGateway.event.queryStringParameters) {
+    const { start = 0, limit = 10 } = req.apiGateway.event.queryStringParameters;
+    apiurl = `https://api.coinlore.net/api/tickers/?start=${start}&$limit=${limit}`;
+  }
+
+  const response = await axios.get(apiurl);
+  res.json({ coins : response.data.data });
 })
+
 app.get('/item', function(req, res) {
   // Add your code here
   res.json({success: 'get call succeed!', url: req.url});
